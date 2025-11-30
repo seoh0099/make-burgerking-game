@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍔 MAKEBURGERKING 훈련 게임</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 750px;
+            box-sizing: border-box;
+            position: relative;
+        }
+        h1 {
+            color: #d9534f;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+        #order-display {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .prompt-area {
+            margin-bottom: 20px;
+        }
+        #prompt-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #337ab7;
+            padding-bottom: 5px;
+        }
+        #prompt {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #337ab7;
+        }
+        #hint-button {
+            padding: 8px 12px;
+            background-color: #f0ad4e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.1s;
+        }
+        #hint-button:hover:not(:disabled) {
+            background-color: #eb9334;
+        }
+        #hint-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        /* 힌트 표시 영역 */
+        #hint-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border: 2px solid #f0ad4e;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 101;
+            display: none;
+            width: 250px;
+        }
+        #hint-display h4 {
+            margin-top: 0;
+            color: #f0ad4e;
+            border-bottom: 1px solid #f0ad4e;
+            padding-bottom: 5px;
+        }
+        #hint-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.95em;
+        }
+        #hint-list li {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .choices-section {
+            margin-bottom: 20px;
+        }
+        .choices-section h3 {
+            color: #555;
+            font-size: 1em;
+            margin-bottom: 8px;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 3px;
+        }
+        .choices-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        /* 기본 버튼 크기: 4열 배치 (패티, 번, 기타 속재료) */
+        .choices-buttons .choice-button {
+            padding: 12px 15px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            flex-grow: 1;
+            min-width: 80px;
+            max-width: calc(25% - 6px); /* 4 columns layout */
+            box-sizing: border-box;
+            transition: background-color 0.1s, transform 0.1s;
+        }
+
+        /* 소스 버튼 크기: 3열 배치 (사용자 요청에 맞춤) */
+        .choices-buttons.fixed-3-col .choice-button {
+            max-width: calc(33.333% - 6px); /* 3 columns layout */
+        }
+
+        .choice-button.item { background-color: #337ab7; }
+        .choice-button.patty { background-color: #d9534f; }
+        .choice-button.bun { background-color: #f0ad4e; }
+        .choice-button.sauce { background-color: #5cb85c; }
+        .choice-button.wrap { background-color: #f0ad4e; }
+        
+        .choice-button:hover:not(:disabled) {
+            filter: brightness(1.2);
+        }
+        .choice-button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        .choice-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .input-group {
+            display: flex;
+            margin-top: 10px;
+        }
+        #text-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 2px solid #ccc;
+            border-radius: 5px 0 0 5px;
+            font-size: 1em;
+        }
+        #text-submit {
+            padding: 10px 15px;
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 0 5px 5px 0;
+            font-size: 1em;
+        }
+
+        #feedback {
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            min-height: 20px;
+            margin-top: 15px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        #start-new-game-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+
+        /* 선택 항목 이력 표시 */
+        #history-display {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 2px dashed #ccc;
+        }
+        #history-display h2 {
+            font-size: 1.2em;
+            color: #4CAF50;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        #selected-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+            background-color: #e8f5e9;
+            border-radius: 8px;
+        }
+        .history-item {
+            background-color: #ffffff;
+            border: 1px solid #a5d6a7;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #1b5e20;
+        }
+
+        /* X 에러 표시 오버레이 */
+        #error-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            pointer-events: none;
+        }
+        #error-x {
+            font-size: 15vw;
+            color: red;
+            font-weight: bolder;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+        .show-x #error-x {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍔 MAKEBURGERKING 훈련 게임</h1>
+    
+    <div id="hint-display">
+        <h4>다음 순서 힌트 (3초 후 사라짐)</h4>
+        <ul id="hint-list"></ul>
+    </div>
+
+    <div id="order-display"></div>
+
+    <div class="prompt-area">
+        <div id="prompt-bar">
+            <div id="prompt"></div>
+            <button id="hint-button" style="display:none;" disabled>힌트 보기 (3초)</button>
+        </div>
+        
+        <div id="choices-container">
+            <div id="wrap-choices" class="choices-section" style="display:none;">
+                <div class="choices-buttons" data-type="wrap"></div>
+            </div>
+            
+            <div id="text-input-area" class="choices-section" style="display:none;">
+                <div class="input-group">
+                    <input type="text" id="text-input" placeholder="글씨를 입력하고 확인을 누르세요" autocomplete="off" maxlength="10">
+                    <button id="text-submit">확인</button>
+                </div>
+            </div>
+
+            <div id="ingredient-choices" class="choices-section" style="display:none;">
+                
+                <h3>🍞 번 종류</h3>
+                <div id="bun-choices" class="choices-buttons" data-type="bun"></div> <h3>🥩 패티</h3>
+                <div id="patty-choices" class="choices-buttons" data-type="patty"></div> 
+
+                <h3>🥫 소스 & 드레싱</h3>
+                <div id="sauce-choices" class="choices-buttons fixed-3-col" data-type="sauce"></div>
+                
+                <h3>🥒 기타 속재료</h3>
+                <div id="item-choices" class="choices-buttons" data-type="item"></div>
+            </div>
+        </div>
+
+        <div id="feedback"></div>
+        
+        <button id="start-new-game-button" style="display:none;">새 주문 받기</button>
+    </div>
+    
+    <div id="error-overlay">
+        <span id="error-x">❌</span>
+    </div>
+
+    <div id="history-display">
+        <h2>✅ 내가 만든 버거 순서</h2>
+        <div id="selected-list">선택한 항목이 여기에 순서대로 표시됩니다.</div>
+    </div>
+</div>
+
+<script>
+    // --- 1. 데이터 정의 ---
+
+    const WRAP_CHOICES = [
+        "와퍼랩", "와치랩", "통새우랩", "와주랩", "와치주랩", "크클랩", "스몰랩", "치킨킹랩", "크리스퍼랩", "슈림프랩", "오픈랩", "맥시멈랩"
+    ].filter((v, i, a) => a.indexOf(v) === i);
+
+    const TEXT_CHOICES = ['-', 'B', 'GB', 'M', 'Q', 'S', 'C', 'BLT', '치킨', 'CM', 'T', 'DY', 'HY', 'GT', '1', '2', '3', '4', 'BB', 'BS', 'BQ', 'Y', '비프', '통새우', '버거번'];
+
+    // --------------------------------------------------------
+    // ** 사용자 요청 반영: 소스/패티/번 목록 순서 및 분리 **
+    // --------------------------------------------------------
+    
+    // 소스 및 드레싱 (SAUCE_CHOICES) - 고정 3열 배치를 위해 순서 유지
+    const SAUCE_CHOICES = [
+        // 1열
+        "트러플소스", "스모키머스타드", "디아블로소스", 
+        // 2열
+        "양념소스", "불고기소스", "타르타르", 
+        // 3열
+        "스테이크소스", "스파이시토마토소스", "케찹", 
+        // 4열
+        "메이플소스", "불닭소스", "핫마요소스",
+        "마요네즈", "치즈소스" // 기존 레시피 구현을 위해 추가 (5열로 간주)
+    ].filter((v, i, a) => a.indexOf(v) === i); 
+
+    // 패티 목록 (PATTY_CHOICES)
+    const PATTY_CHOICES = [
+        "와퍼패티", "킹치킨패티", "버거패티", "마일드가슴살패티", "스파이시홀치킨", 
+        "크리스퍼 텐더", "새우패티", "150패티", "에그패티"
+    ].filter((v, i, a) => a.indexOf(v) === i); 
+    
+    // 번 목록 (BUN_CHOICES) - 새로 분리
+    const BUN_CHOICES = [
+        "힐", "와퍼번", "버거번", "또띠아", "브리오슈번", "베이비번"
+    ].filter((v, i, a) => a.indexOf(v) === i);
+
+    // 기타 속재료 (ITEM_ONLY_CHOICES) - 번 제외
+    const ITEM_ONLY_CHOICES = [
+        "양상추", "토마토", "양파", "피클", "후레시피클", "갈릭칩", "구운버섯", "구운마늘", 
+        "치즈", "몬터레이잭치즈", "슈레더", "베이컨", "솔트페퍼", "새우"
+    ].filter((v, i, a) => a.indexOf(v) === i); 
+
+    // --------------------------------------------------------
+    
+    // 구조: [랩지, 랩지 글씨, 재료1:개수, 재료2:개수, ...]
+    const RECIPES = {
+        "와퍼": ["와퍼랩", "-", "힐:1", "와퍼패티:1", "솔트페퍼:1", "피클:4", "케찹:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "와퍼번:1"],
+        "치즈와퍼": ["와치랩", "-", "힐:1", "와퍼패티:1", "솔트페퍼:1", "치즈:2", "피클:4", "케찹:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "와퍼번:1"],
+        "콰트로치즈 와퍼": ["와퍼랩", "-", "힐:1", "와퍼패티:1", "솔트페퍼:1", "치즈:2", "슈레더:1", "케찹:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "와퍼번:1"],
+        "통새우 와퍼": ["통새우랩", "-", "힐:1", "와퍼패티:1", "솔트페퍼:1", "새우:4", "스파이시토마토소스:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "와퍼번:1"],
+        "불고기 와퍼": ["와퍼랩", "B", "힐:1", "와퍼패티:1", "솔트페퍼:1", "피클:4", "불고기소스:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "와퍼번:1"],
+        "갈릭불고기 와퍼": ["와퍼랩", "GB", "힐:1", "와퍼패티:1", "솔트페퍼:1", "갈릭칩:1", "불고기소스:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "와퍼번:1"],
+        "몬스터 와퍼": ["와퍼랩", "M", "힐:1", "와퍼패티:1", "솔트페퍼:1", "치즈:2", "베이컨:2", "킹치킨패티:1", "디아블로소스:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1"],
+        "와퍼주니어": ["와주랩", "-", "힐:1", "버거패티:1", "피클:4", "케찹:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "치즈와퍼주니어": ["와치주랩", "-", "힐:1", "버거패티:1", "치즈:2", "피클:4", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "콰트로치즈 와퍼주니어": ["와치주랩", "Q", "힐:1", "치즈소스:1", "버거패티:1", "치즈:1", "슈레더:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "통새우 와퍼주니어": ["와주랩", "S", "힐:1", "버거패티:1", "새우:2", "스파이시토마토소스:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "불고기 와퍼주니어": ["와주랩", "B", "힐:1", "버거패티:1", "피클:2", "불고기소스:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "몬스터 주니어": ["와주랩", "M", "힐:1", "버거패티:1", "치즈:1", "디아블로소스:1", "킹치킨패티:1", "불고기소스:1", "양파:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "치킨치즈마요버거": ["크클랩", "CM", "힐:1", "마요네즈:1", "킹치킨패티:1", "치즈:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "치즈버거": ["스몰랩", "C", "힐:1", "버거패티:1", "치즈:1", "피클:2", "케찹:1", "스모키머스타드:1", "버거번:1"],
+        "비프 불고기버거": ["스몰랩", "B", "힐:1", "버거패티:1", "불고기소스:1", "양파:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "더블비프 불고기버거": ["스몰랩", "B", "힐:1", "버거패티:1", "치즈:1", "버거패티:1", "불고기소스:1", "양파:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "치킨킹": ["치킨킹랩", "-", "힐:1", "스모키머스타드:1", "피클:4", "스파이시홀치킨:1", "양상추:1", "마요네즈:1", "브리오슈번:1"],
+        "치킨킹BLT": ["치킨킹랩", "BLT", "힐:1", "스모키머스타드:1", "피클:4", "스파이시홀치킨:1", "베이컨:1", "토마토:1", "양상추:1", "마요네즈:1", "브리오슈번:1"],
+        "치킨버거": ["크클랩", "치킨", "힐:1", "마요네즈:1", "피클:4", "킹치킨패티:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "크리스퍼 클래식": ["크클랩", "-", "힐:1", "스모키머스타드:1", "후레시피클:4", "마일드가슴살패티:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "크리스퍼 클래식 BLT": ["크클랩", "BLT", "힐:1", "스모키머스타드:1", "후레시피클:4", "마일드가슴살패티:1", "베이컨:1", "토마토:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "크리스퍼 랩": ["크리스퍼랩", "-", "또띠아:1", "마요네즈:1", "양상추:1", "후레시피클:2", "스모키머스타드:1", "크리스퍼 텐더:1"],
+        "크리스퍼 랩 불닭치킨": ["크리스퍼랩", "B", "또띠아:1", "불닭소스:1", "양상추:1", "불닭소스:1", "크리스퍼 텐더:1"],
+        "크리스퍼 랩 양념치킨": ["크리스퍼랩", "Y", "또띠아:1", "마요네즈:1", "양상추:1", "양념소스:1", "크리스퍼 텐더:1"],
+        "크리스퍼 불닭치킨": ["크클랩", "B", "힐:1", "마일드가슴살패티:1", "불닭소스:1", "양파:1", "양상추:1", "불닭소스:1", "버거번:1"],
+        "크리스퍼 양념치킨": ["크클랩", "Y", "힐:1", "마요네즈:1", "양념소스:1", "마일드가슴살패티:1", "양념소스:1", "갈릭칩:1", "양파:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "슈림프 버거": ["슈림프랩", "버거번", "힐:1", "새우패티:1", "타르타르:1", "양상추:1", "타르타르:1", "버거번:1"],
+        "통새우 슈림프 버거": ["슈림프랩", "통새우", "힐:1", "새우패티:1", "새우:2", "스파이시토마토소스:1", "양파:1", "양상추:1", "타르타르:1", "버거번:1"],
+        "비프&슈림프 버거": ["슈림프랩", "비프", "힐:1", "버거패티:1", "새우패티:1", "스모키머스타드:1", "양파:1", "토마토:1", "양상추:1", "타르타르:1", "버거번:1"],
+        "베이비 콰트로": ["스몰랩", "BQ", "힐:1", "치즈소스:1", "버거패티:1", "치즈:1", "슈레더:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "버거번:1"],
+        "베이비 통새우": ["스몰랩", "BS", "힐:1", "버거패티:1", "새우:2", "스파이시토마토소스:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "베이비번:1"],
+        "베이비 불고기": ["스몰랩", "BB", "힐:1", "버거패티:1", "피클:2", "불고기소스:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "베이비번:1"],
+        "트러플 머쉬룸 와퍼": ["와퍼랩", "T", "힐:1", "와퍼패티:1", "솔트페퍼:1", "베이컨:2", "구운버섯:1", "트러플소스:1", "양파:1", "토마토:1", "양상추:1", "트러플소스:1", "와퍼번:1"],
+        "딥 트러플 머쉬룸 더블": ["와퍼랩", "DY", "힐:1", "트러플소스:1", "와퍼패티:1", "와퍼패티:1", "솔트페퍼:1", "구운버섯:1", "트러플소스:1", "양파:1", "트러플소스:1", "와퍼번:1"],
+        "핫 트러플 머쉬룸와퍼": ["와퍼랩", "HY", "힐:1", "와퍼패티:1", "솔트페퍼:1", "베이컨:2", "구운버섯:1", "핫마요소스:1", "양파:1", "양상추:1", "트러플소스:1", "와퍼번:1"],
+        "골든 에그 트러플": ["와퍼랩", "GT", "힐:1", "와퍼패티:1", "솔트페퍼:1", "몬터레이잭치즈:1", "에그패티:1", "구운버섯:1", "트러플소스:1", "양파:1", "양상추:1", "트러플소스:1", "브리오슈번:1"],
+        "뉴욕 스테이크": ["오픈랩", "1", "힐:1", "몬터레이잭치즈:1", "150패티:1", "솔트페퍼:1", "치즈:1", "베이컨:2", "슈레더:1", "스테이크소스:1", "양파:1", "양상추:1", "스테이크소스:1", "브리오슈번:1"],
+        "메이플갈릭": ["오픈랩", "2", "힐:1", "몬터레이잭치즈:1", "150패티:1", "솔트페퍼:1", "베이컨:2", "구운마늘:10", "메이플소스:1", "양파:1", "토마토:1", "양상추:1", "마요네즈:1", "브리오슈번:1"],
+        "더오치맥시멈2": ["맥시멈랩", "2", "힐:1", "와퍼패티:1", "치즈:2", "와퍼패티:1", "솔트페퍼:1", "치즈:2", "피클:4", "케찹:1", "양파:1", "양상추:1", "스모키머스타드:1", "와퍼번:1"],
+        "더오치맥시멈3": ["맥시멈랩", "3", "힐:1", "스모키머스타드:1", "와퍼패티:1", "치즈:2", "와퍼패티:1", "치즈:2", "와퍼패티:1", "솔트페퍼:1", "치즈:2", "피클:4", "케찹:1", "양파:1", "양상추:1", "스모키머스타드:1", "와퍼번:1"],
+        "맥시멈원파운드": ["맥시멈랩", "4", "힐:1", "스모키머스타드:1", "와퍼패티:1", "치즈:2", "와퍼패티:1", "치즈:2", "와퍼패티:1", "치즈:2", "와퍼패티:1", "솔트페퍼:1", "치즈:2", "피클:4", "케찹:1", "양파:1", "양상추:1", "스모키머스타드:1", "와퍼번:1"],
+    };
+
+
+    // --- 2. 게임 상태 관리 변수 ---
+    let currentRecipeName = '';
+    let currentRecipeData = [];
+    let currentStep = 0; // 0: 랩지, 1: 글씨, 2: 재료 (힐부터)
+    let currentIngredientIndex = 0; // 레시피 데이터의 재료 시작 인덱스 (힐부터: 2)
+    let isGameRunning = false;
+    let hintTimeout = null; // 힌트 타이머 관리
+    let selectedHistory = []; // 선택된 항목 이력
+
+    // --- 3. DOM 요소 ---
+    const orderDisplay = document.getElementById('order-display');
+    const promptElement = document.getElementById('prompt');
+    const wrapChoicesDiv = document.querySelector('#wrap-choices .choices-buttons');
+    const textInputArea = document.getElementById('text-input-area');
+    const textInput = document.getElementById('text-input');
+    const textSubmit = document.getElementById('text-submit');
+    const bunChoicesDiv = document.getElementById('bun-choices'); // 번 DOM
+    const pattyChoicesDiv = document.getElementById('patty-choices'); // 패티 DOM
+    const itemChoicesDiv = document.getElementById('item-choices'); // 기타 속재료 DOM
+    const sauceChoicesDiv = document.getElementById('sauce-choices'); // 소스 DOM
+    const feedbackElement = document.getElementById('feedback');
+    const startNewGameButton = document.getElementById('start-new-game-button');
+    const errorOverlay = document.getElementById('error-overlay');
+    const hintButton = document.getElementById('hint-button');
+    const hintDisplay = document.getElementById('hint-display');
+    const hintList = document.getElementById('hint-list');
+    const selectedListDisplay = document.getElementById('selected-list');
+
+    // --- 4. 유틸리티 함수 ---
+
+    function showFeedback(message, isCorrect) {
+        feedbackElement.textContent = message;
+        feedbackElement.className = isCorrect ? 'success' : 'error';
+    }
+
+    function hideFeedback() {
+        feedbackElement.textContent = '';
+        feedbackElement.className = '';
+    }
+
+    function updateHistoryDisplay() {
+        selectedListDisplay.innerHTML = '';
+        if (selectedHistory.length === 0) {
+            selectedListDisplay.textContent = '선택한 항목이 여기에 순서대로 표시됩니다.';
+            return;
+        }
+
+        selectedHistory.forEach((item) => {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.innerHTML = item;
+            selectedListDisplay.appendChild(historyItem);
+        });
+    }
+
+    /**
+     * 버튼을 생성하고 클릭 이벤트를 연결합니다. 소스처럼 isFixedOrder가 true면 순서 고정.
+     */
+    function createButtons(choices, container, className, isFixedOrder = false) {
+        container.innerHTML = '';
+        
+        // isFixedOrder가 true일 경우 순서 고정, 아니면 랜덤 배열 (훈련용)
+        const finalChoices = isFixedOrder ? choices.slice() : choices.slice().sort(() => Math.random() - 0.5);
+        
+        // CSS 클래스 적용 (소스에만 fixed-3-col 적용됨)
+        if (isFixedOrder) {
+            container.classList.add('fixed-3-col'); 
+        } else {
+            container.classList.remove('fixed-3-col');
+        }
+
+        finalChoices.forEach(choice => {
+            const button = document.createElement('button');
+            button.className = `choice-button ${className}`;
+            button.textContent = choice;
+            button.setAttribute('data-value', choice);
+            button.addEventListener('click', () => processClick(choice));
+            container.appendChild(button);
+        });
+    }
+
+    /**
+     * 모든 버튼을 생성하고 클릭 이벤트를 연결합니다.
+     */
+    function generateButtons() {
+        // 랩지 (랜덤)
+        createButtons(WRAP_CHOICES, wrapChoicesDiv, 'wrap');
+        // 번 (랜덤)
+        createButtons(BUN_CHOICES, bunChoicesDiv, 'bun');
+        // 패티 (랜덤)
+        createButtons(PATTY_CHOICES, pattyChoicesDiv, 'patty');
+        // 기타 속재료 (랜덤)
+        createButtons(ITEM_ONLY_CHOICES, itemChoicesDiv, 'item');
+        // 소스 (순서 고정 & 3열 배치)
+        createButtons(SAUCE_CHOICES, sauceChoicesDiv, 'sauce', true); 
+    }
+
+    function showCurrentStepUI(step) {
+        document.querySelectorAll('.choices-section').forEach(el => el.style.display = 'none');
+        startNewGameButton.style.display = 'none';
+        hintButton.style.display = 'none';
+        hintButton.disabled = true;
+
+        if (step === 0) {
+            document.getElementById('wrap-choices').style.display = 'block';
+            promptElement.textContent = "랩지는 무엇입니까?";
+        } else if (step === 1) {
+            textInputArea.style.display = 'block';
+            promptElement.textContent = "무슨 글씨를 적어야 합니까?";
+            textInput.value = '';
+            textInput.focus();
+        } else if (step === 2) {
+            document.getElementById('ingredient-choices').style.display = 'block';
+            promptElement.textContent = "재료는 무엇입니까?";
+            hintButton.style.display = 'inline-block';
+            hintButton.disabled = false;
+        } else { // 3: Game Finished
+            promptElement.innerHTML = `<strong>🎉 ${currentRecipeName} 포장 완료! 🎉</strong>`;
+            startNewGameButton.style.display = 'block';
+            showFeedback("✨ 완벽합니다! 모든 단계를 정확하게 수행했습니다! ✨", true);
+        }
+    }
+    
+    function showHint() {
+        if (currentStep !== 2 || !isGameRunning || hintButton.disabled) return;
+        
+        hintButton.disabled = true;
+
+        hintList.innerHTML = '';
+        
+        const hintItems = currentRecipeData.slice(currentIngredientIndex, currentIngredientIndex + 5);
+
+        if (hintItems.length === 0) {
+            hintList.innerHTML = '<li>남은 재료가 없습니다.</li>';
+        } else {
+            hintItems.forEach((item, index) => {
+                const [name, count] = item.split(':');
+                const listItem = document.createElement('li');
+                listItem.textContent = `${currentIngredientIndex - 1 + index}. ${name} (${count}개)`; 
+                hintList.appendChild(listItem);
+            });
+        }
+        
+        hintDisplay.style.display = 'block';
+
+        clearTimeout(hintTimeout);
+        hintTimeout = setTimeout(() => {
+            hintDisplay.style.display = 'none';
+            if (currentStep === 2) { 
+                hintButton.disabled = false;
+            }
+        }, 3000); 
+    }
+
+    function triggerErrorAndRestart() {
+        isGameRunning = false;
+        errorOverlay.style.display = 'flex';
+        errorOverlay.classList.add('show-x');
+        
+        showFeedback(`❌ 오답! 재료 순서를 처음부터 다시 시작합니다.`, false);
+        
+        hintDisplay.style.display = 'none';
+        clearTimeout(hintTimeout);
+
+        selectedHistory = selectedHistory.slice(0, 2); 
+        currentStep = 2; 
+        currentIngredientIndex = 2;
+        
+        setTimeout(() => {
+            errorOverlay.classList.remove('show-x');
+            errorOverlay.style.display = 'none';
+            hideFeedback();
+            isGameRunning = true;
+            updateHistoryDisplay();
+            nextStep(); 
+        }, 1000); 
+    }
+
+    function processClick(userAnswer) {
+        if (!isGameRunning) return;
+        
+        if (hintDisplay.style.display === 'block') {
+            hintDisplay.style.display = 'none';
+            clearTimeout(hintTimeout);
+            hintButton.disabled = false;
+        }
+        
+        hideFeedback();
+        let correctItem = '';
+
+        if (currentStep === 0) {
+            // 랩지 단계
+            correctItem = currentRecipeData[0];
+            if (userAnswer === correctItem) {
+                currentStep = 1;
+                selectedHistory.push(`랩지: ${correctItem}`);
+                showFeedback(`✅ 랩지 정답! (${correctItem})`, true);
+                updateHistoryDisplay();
+                setTimeout(nextStep, 500);
+            } else {
+                showFeedback(`❌ 랩지 오답! [${userAnswer}] 선택. 다시 시도하세요.`, false);
+            }
+
+        } else if (currentStep === 2) {
+            // 재료 순서 단계
+            if (currentIngredientIndex >= currentRecipeData.length) {
+                return;
+            }
+
+            const fullItem = currentRecipeData[currentIngredientIndex];
+            correctItem = fullItem.split(':')[0]; 
+
+            if (userAnswer === correctItem) {
+                // 정답!
+                const [name, count] = fullItem.split(':');
+                selectedHistory.push(`재료: ${name} (${count}개)`);
+                
+                showFeedback(`✅ 정답! (${currentIngredientIndex - 1}번째 재료: ${correctItem})`, true);
+                currentIngredientIndex++;
+                updateHistoryDisplay();
+                
+                if (currentIngredientIndex >= currentRecipeData.length) {
+                    currentStep = 3;
+                }
+                
+                document.querySelectorAll('.choice-button').forEach(btn => btn.disabled = true);
+                
+                setTimeout(nextStep, 500); 
+            } else {
+                // 오답! 재료 단계 초기화
+                triggerErrorAndRestart();
+            }
+        }
+    }
+
+    function processTextInput() {
+        if (!isGameRunning) return;
+
+        const userAnswer = textInput.value.trim().toUpperCase();
+        const correctItem = currentRecipeData[1];
+        
+        if (currentStep !== 1) return;
+
+        if (userAnswer === correctItem.toUpperCase()) {
+            currentStep = 2;
+            selectedHistory.push(`글씨: ${correctItem}`);
+            showFeedback(`✅ 글씨 정답! (${correctItem})`, true);
+            updateHistoryDisplay();
+            setTimeout(nextStep, 500);
+        } else {
+            showFeedback(`❌ 글씨 오답! [${userAnswer}] 입력. 정답은 [${correctItem}] 입니다. 다시 입력하세요.`, false);
+            textInput.value = '';
+            textInput.focus();
+        }
+    }
+
+
+    function nextStep() {
+        hideFeedback();
+        showCurrentStepUI(currentStep);
+        
+        // 재료 단계에서만 버튼 활성화
+        if (currentStep === 2) {
+             document.querySelectorAll('.choice-button').forEach(btn => btn.disabled = false);
+        } else {
+             // 랩지 단계에서는 랩지 버튼만 활성화
+             document.querySelectorAll('.choice-button').forEach(btn => btn.disabled = true);
+             document.querySelectorAll('#wrap-choices .choice-button').forEach(btn => btn.disabled = false);
+        }
+    }
+
+    function startGame() {
+        const menuNames = Object.keys(RECIPES);
+        currentRecipeName = menuNames[Math.floor(Math.random() * menuNames.length)];
+        currentRecipeData = RECIPES[currentRecipeName];
+        currentStep = 0; 
+        currentIngredientIndex = 2;
+        isGameRunning = true;
+        selectedHistory = [];
+        
+        orderDisplay.textContent = `📢 주문이 들어왔습니다: ${currentRecipeName}`;
+        textInput.value = '';
+        hintDisplay.style.display = 'none';
+        clearTimeout(hintTimeout);
+        
+        // 버튼 배열을 재랜덤화 및 생성 (소스 제외)
+        generateButtons(); 
+        updateHistoryDisplay();
+        
+        nextStep();
+    }
+
+    // --- 6. 초기 실행 및 이벤트 연결 ---
+    document.addEventListener('DOMContentLoaded', () => {
+        generateButtons();
+
+        textSubmit.addEventListener('click', processTextInput);
+        textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                processTextInput();
+            }
+        });
+        
+        hintButton.addEventListener('click', showHint);
+        startNewGameButton.addEventListener('click', startGame);
+
+        startGame();
+    });
+</script>
+
+</body>
+</html>
